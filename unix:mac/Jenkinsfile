@@ -1,0 +1,66 @@
+pipeline {
+  agent { label 'rhel-test' }
+    environment {
+    EXTRA= "/usr/local/bin:/opt/chefdk/bin:/Users/eljeffe/.chefdk/gem/ruby/2.6.0/bin:/opt/chefdk/embedded/bin"
+      }
+  stages {
+
+    stage('Setup') {
+      steps {
+        // withEnv(["PATH+EXTRA=$EXTRA"]) {
+        // sh 'chef shell-init sh'
+        sh 'echo "Versions: "'
+        sh 'chef --version'
+        sh 'rubocop --version'
+        sh 'foodcritic --version'
+        sh 'echo "Updating Berkshelf: "'
+        sh 'if [ ! -f Policyfile.rb ]; then chef install Policyfile.rb; else echo nothing; fi;'
+      }
+    }
+
+stage('Acceptance Testing') {
+      steps {
+            parallel(
+              Rubocop: {
+            sh'echo "Starting chefstyle (rubocop): "'
+            sh'rubocop --color'
+              },
+              FoodCritic: {
+            sh'echo "Starting foodcritic: "'
+            sh'foodcritic . --tags -FC078'
+              },
+              ChefSpec: {
+            sh'echo Starting ChefSpec: '
+            sh'chef exec rspec'
+              }
+            )
+          }
+        }
+
+
+    stage('Test Kitchen') {
+      steps {
+        sh 'kitchen test -d always --color'
+      }
+    }
+  }
+// }
+
+  post {
+    success {
+      script{
+      if( env.BRANCH_NAME == 'dev' ) {
+        sshagent(credentials: ['jenkins-generated-ssh-key']) {
+        sh 'git request-pull -p origin/master git@gitlab.com:jbrimager/audit_wrap.git dev'
+        }
+      } else if (env.BRANCH_NAME == 'master') {
+          echo "berks or policyfile install steps here"
+        } 
+      }
+    }
+    failure {
+      echo "The build failed"
+      sh "sudo rm -rf $WORKSPACE/*"
+      }
+    }
+  }  
