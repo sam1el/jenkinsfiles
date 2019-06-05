@@ -43,53 +43,21 @@ stage('Acceptance Testing') {
     }
   }
 
-
-  post {
+post {
     success {
-      echo "Berks Upload"
-     }
+      script{
+      if( env.BRANCH_NAME == 'dev' ) {
+        sshagent(credentials: ['jenkins-generated-ssh-key']) {
+        sh 'git request-pull -p origin/master git@gitlab.com:jbrimager/audit_wrap.git dev'
+        }
+      } else if (env.BRANCH_NAME == 'master') {
+          echo "berks or policyfile install steps here"
+        } 
+      }
+    }
     failure {
       echo "The build failed"
+      sh "sudo rm -rf $WORKSPACE/*"
+      }
     }
-  }
-}
-    // stage('Merge to master') {
-    //    when {
-    //      expression {
-    //        return env.BRANCH_NAME != 'dev';
-    //        }
-    //       }
-    //       steps{
-    //       powershell('''git push -o merge_request.create''')
-    //       }
-    //      }
-    //     stage('Merge and push to chef-server') {
-    //         when {
-    //      expression {
-    //        return env.BRANCH_NAME != 'master';
-    //        }
-    //       }
-    //       steps{
-    //           // plan is to come back and add logic for copying the starterkit into a chef-repo and moving the workingdir for berks or policyfile magic.
-    //             // input message: 'All tests Passed, pushing to chef'
-    //             powershell('''echo berks install''') 
-    //             powershell('''echo berks upload''')
-    //         }
-    //       } 
-
-
-    // stage('Deployment') {
-    //   if (env.BRANCH_NAME == 'dev') {
-    //     // node('devwin') {
-    //   // stage('Merge to master') {
-    //     input message: 'All tests passed. Creating merge request.'
-    //       powershell('''git push -o merge_request.create -o merge_request.target=master''')
-    //       } else { 
-    //     stage('Merge and push to chef-server') {
-    //           // plan is to come back and add logic for copying the starterkit into a chef-repo and moving the workingdir for berks or policyfile magic.
-    //             input message: 'All tests Passed, pushing to chef'
-    //             powershell('''echo berks install''') 
-    //             powershell('''echo berks upload''')
-    //         }
-    //       }
-    //     }
+  }  
