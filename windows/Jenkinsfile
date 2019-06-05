@@ -42,12 +42,12 @@ stage('Acceptance Testing') {
       }
     }
   }
-
+// below i am doing branch checking and pull requests based on non-master to master. could be a cleaner way but haven't finished development
 post {
     success {
       script{
       if( env.BRANCH_NAME == 'dev' ) {
-        sshagent(credentials: ['jenkins-generated-ssh-key']) {
+        //sshagent(credentials: ['jenkins-generated-ssh-key']) {  //this was only used in testing when git creds would drop. if you run in to this, find your git creds name in jenkins and uncomment here
         sh 'git request-pull -p origin/master git@gitlab.com:jbrimager/audit_wrap.git dev'
         }
       } else if (env.BRANCH_NAME == 'master') {

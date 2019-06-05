@@ -1,20 +1,20 @@
 pipeline {
   agent { label 'rhel-test' }
-    environment {
-    EXTRA= "/usr/local/bin:/opt/chefdk/bin:/Users/eljeffe/.chefdk/gem/ruby/2.6.0/bin:/opt/chefdk/embedded/bin"
-      }
+    // environment {
+    // EXTRA= "your path needs here"
+    //   }
   stages {
 
     stage('Setup') {
       steps {
-        // withEnv(["PATH+EXTRA=$EXTRA"]) {
-        // sh 'chef shell-init sh'
+        // withEnv(["PATH+EXTRA=$EXTRA"]) { ##this is how you'd add path to this stage
+        // sh 'chef shell-init sh' ## this is if chef shell env isn't seeing everything
         sh 'echo "Versions: "'
         sh 'chef --version'
         sh 'rubocop --version'
         sh 'foodcritic --version'
         sh 'echo "Updating Berkshelf: "'
-        sh 'if [ ! -f Policyfile.rb ]; then chef install Policyfile.rb; else echo nothing; fi;'
+        sh 'if [ ! -f Policyfile.rb ]; then chef install Policyfile.rb; else echo nothing; fi;' // would like to come back and add more pieces to policy promotion but need time work out kinks
       }
     }
 
@@ -44,8 +44,8 @@ stage('Acceptance Testing') {
       }
     }
   }
-// }
 
+// below i am doing branch checking and pull requests based on non-master to master. could be a cleaner way but haven't finished development
   post {
     success {
       script{
@@ -54,7 +54,7 @@ stage('Acceptance Testing') {
         sh 'git request-pull -p origin/master git@gitlab.com:jbrimager/audit_wrap.git dev'
         }
       } else if (env.BRANCH_NAME == 'master') {
-          echo "berks or policyfile install steps here"
+          echo "berks or policyfile upload steps here"  // this will include chef repo pieces
         } 
       }
     }
